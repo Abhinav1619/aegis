@@ -1,0 +1,19 @@
+!
+version 15.2
+hostname edge-router-1
+!
+enable secret 5 $1$mERr$hx5rVt7rPNoS4wqbXKX7m0
+!
+line vty 0 4
+ transport input ssh
+!
+ip ssh version 2
+service password-encryption
+logging host 10.0.0.5
+!
+snmp-server community PUBLIC123 RO
+!
+access-list 101 deny tcp any any eq 23
+access-list 101 permit ip any any
+!
+end

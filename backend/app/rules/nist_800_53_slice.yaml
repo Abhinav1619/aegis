@@ -1,0 +1,53 @@
+# STARTER/PLACEHOLDER slice - same status as cis_ios_v1.2.yaml: written by
+# lead+Claude to make the multi-framework selector actually demonstrable
+# today, pending the cybersecurity teammate's real NIST 800-53 authoring
+# pass (team-task-assignments.md). Do not cite these control numbers
+# externally until she's verified them against the real NIST SP 800-53 Rev 5
+# text. Reuses the same canonical fields as the CIS rules on purpose - one
+# field can legitimately be checked by more than one framework's rule.
+
+framework: NIST
+standard_version: "SP 800-53 Rev 5 (draft slice)"
+rules:
+  - id: NIST-AC-17
+    title: "Remote access must use an encrypted protocol (AC-17)"
+    control_family: AC
+    check_type: boolean
+    predicate: { field: AC.telnet_enabled, equals: false }
+    severity: CAT_I
+    remediation_template_ref: CIS-CISCO-3.1
+
+  - id: NIST-IA-7
+    title: "Cryptographic module authentication - SSHv2 minimum (IA-7)"
+    control_family: IA
+    check_type: range
+    predicate: { field: IA.ssh_version, min: 2 }
+    severity: CAT_I
+    remediation_template_ref: CIS-CISCO-3.2
+
+  - id: NIST-IA-5
+    title: "Authenticator (password) management - storage protection (IA-5)"
+    control_family: IA
+    check_type: boolean
+    predicate: { field: IA.password_encryption_enabled, equals: true }
+    severity: CAT_II
+    remediation_template_ref: CIS-CISCO-3.3
+
+  - id: NIST-AU-3
+    title: "Content of audit records must support accountability (AU-3)"
+    control_family: AU
+    check_type: boolean
+    predicate: { field: AU.logging_enabled, equals: true }
+    severity: CAT_III
+    remediation_template_ref: null
+
+  - id: NIST-AC-4
+    title: "Information flow enforcement - no unrestricted Telnet ingress (AC-4)"
+    control_family: AC
+    check_type: ordered-first-match
+    predicate:
+      field: AC.acl_rules
+      match: { protocol: tcp, port: 23 }
+      want_action_if_matched: deny
+    severity: CAT_I
+    remediation_template_ref: CIS-CISCO-3.4

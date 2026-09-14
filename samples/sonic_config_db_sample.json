@@ -1,0 +1,22 @@
+{
+  "DEVICE_METADATA": {
+    "localhost": { "hostname": "sonic-switch-1" }
+  },
+  "MGMT_INTERFACE": {
+    "eth0|192.168.1.1/24": { "telnet": "disabled", "ssh_version": "2" }
+  },
+  "SYSLOG_SERVER": {
+    "10.0.0.9": {}
+  },
+  "ACL_TABLE": {
+    "TELNET_BLOCK": { "type": "L3", "stage": "ingress" }
+  },
+  "ACL_RULE": {
+    "TELNET_BLOCK|RULE_1": {
+      "PRIORITY": "9999",
+      "PACKET_ACTION": "DROP",
+      "IP_PROTOCOL": "6",
+      "L4_DST_PORT": "23"
+    }
+  }
+}

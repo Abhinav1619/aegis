@@ -1,0 +1,61 @@
+# STARTER SET - placeholder rules written by the lead+Claude to unblock the
+# rule-engine build on Day 2, pending the cybersecurity teammate's actual
+# authoring pass against the real CIS Benchmark text (team-task-
+# assignments.md, cybersecurity teammate, Day 1-2). Control numbering below
+# ("CIS-CISCO-3.x") is illustrative, NOT the real CIS Cisco IOS Benchmark
+# section numbers - do not cite these ids externally until reviewed.
+#
+# Schema matches models.py's Rule table: standard_ref, standard_version,
+# control_family (NIST 800-53 family), check_type (one of the 6 in
+# rule_engine.py), predicate, severity (CAT_I/CAT_II/CAT_III), framework,
+# remediation_template_ref (key into remediation.py's TEMPLATES).
+
+framework: CIS
+standard_version: "1.2-draft"
+rules:
+  - id: CIS-CISCO-3.1
+    title: "Telnet must be disabled"
+    control_family: AC
+    check_type: boolean
+    predicate: { field: AC.telnet_enabled, equals: false }
+    severity: CAT_I
+    remediation_template_ref: CIS-CISCO-3.1
+
+  - id: CIS-CISCO-3.2
+    title: "SSH version 2 or higher required"
+    control_family: IA
+    check_type: range
+    predicate: { field: IA.ssh_version, min: 2 }
+    severity: CAT_I
+    remediation_template_ref: CIS-CISCO-3.2
+
+  - id: CIS-CISCO-3.3
+    title: "Password encryption must be enabled"
+    control_family: IA
+    check_type: boolean
+    predicate: { field: IA.password_encryption_enabled, equals: true }
+    severity: CAT_II
+    remediation_template_ref: CIS-CISCO-3.3
+
+  - id: CIS-CISCO-4.1
+    title: "Administrative activity must be logged to a remote host"
+    control_family: AU
+    check_type: set-membership
+    predicate: { field: AU.logging_host, mode: all_in, values: ["10.0.0.5"] }
+    severity: CAT_III
+    remediation_template_ref: CIS-CISCO-4.1
+    # Note: "all_in" against a single known-good server is a placeholder
+    # shape for the demo; a real rule would check "logging_host is non-empty"
+    # (a boolean-on-list-length style check we haven't added a predicate for
+    # yet) rather than an allow-list of one specific IP.
+
+  - id: CIS-CISCO-3.4
+    title: "No ACL rule may permit inbound Telnet (TCP/23) from any source"
+    control_family: AC
+    check_type: ordered-first-match
+    predicate:
+      field: AC.acl_rules
+      match: { protocol: tcp, port: 23 }
+      want_action_if_matched: deny
+    severity: CAT_I
+    remediation_template_ref: CIS-CISCO-3.4

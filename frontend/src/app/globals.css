@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+/* No dark theme is designed for this app (no `dark:` variants used anywhere) -
+   deliberately not auto-switching on OS preference, unlike the scaffold
+   default. The previous @media(prefers-color-scheme:dark) block here was
+   silently winning over the Tailwind bg/text classes on <body> in
+   layout.tsx regardless of specificity, because Tailwind v4's utilities live
+   inside @layer and this rule didn't - unlayered CSS always beats layered
+   CSS in the cascade. That's what caused the black background. */
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* The scaffold's leftover `font-family: Arial` here was silently beating the
+   Geist font loaded in layout.tsx - nothing ever actually used
+   var(--font-geist-sans) applied to <html>, so the whole app rendered in
+   Arial the entire time. */
+body {
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+::selection {
+  background-color: #0f172a;
+  color: white;
+}

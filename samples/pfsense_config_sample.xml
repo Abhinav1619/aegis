@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<pfsense>
+  <version>23.1</version>
+  <system>
+    <hostname>edge-fw-1</hostname>
+    <webgui>
+      <protocol>https</protocol>
+    </webgui>
+    <disablesshd>disabled</disablesshd>
+  </system>
+  <syslog>
+    <remoteserver>10.0.0.5</remoteserver>
+  </syslog>
+  <filter>
+    <rule>
+      <type>block</type>
+      <protocol>tcp</protocol>
+      <destination>
+        <port>23</port>
+      </destination>
+    </rule>
+    <rule>
+      <type>pass</type>
+      <protocol>any</protocol>
+      <destination>
+        <any>1</any>
+      </destination>
+    </rule>
+  </filter>
+</pfsense>
