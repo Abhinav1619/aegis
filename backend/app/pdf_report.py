@@ -5,7 +5,7 @@ remediation steps.
 """
 import datetime as dt
 import io
-from zoneinfo import ZoneInfo
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
@@ -45,6 +45,25 @@ PAGE_W, PAGE_H = letter
 # SimpleDocTemplate's page callbacks.
 _current_report_meta = {"report_id": "", "generated_at": ""}
 
+# Fixed-offset last resort - zero dependency on the tzdata database, so this
+# can never fail the way ZoneInfo(...) can (e.g. the `tzdata` PyPI package
+# missing on Windows, which has no OS-level tz database of its own - the bug
+# that motivated this whole fallback chain: both the requested zone AND the
+# old ZoneInfo("Asia/Kolkata") fallback raised ZoneInfoNotFoundError
+# identically, since they're the same mechanism).
+_IST_FIXED_OFFSET = dt.timezone(dt.timedelta(hours=5, minutes=30), name="IST")
+
+
+def _resolve_zone(tz_name: str | None):
+    for candidate in (tz_name, "Asia/Kolkata"):
+        if not candidate:
+            continue
+        try:
+            return ZoneInfo(candidate)
+        except (ZoneInfoNotFoundError, ValueError):
+            continue
+    return _IST_FIXED_OFFSET
+
 
 def generate(
     device: dict,
@@ -57,12 +76,9 @@ def generate(
     # passes its browser-detected IANA zone (Intl.DateTimeFormat().resolvedOptions().timeZone),
     # so no IP/location lookup is ever involved. Falls back to IST since
     # that's this team's own timezone and the most likely default deployment.
-    try:
-        zone = ZoneInfo(tz_name) if tz_name else ZoneInfo("Asia/Kolkata")
-    except Exception:
-        zone = ZoneInfo("Asia/Kolkata")
+    zone = _resolve_zone(tz_name)
     generated_at = dt.datetime.now(zone)
-    tz_label = generated_at.tzname() or zone.key
+    tz_label = generated_at.tzname() or getattr(zone, "key", "IST")
     rid = f"AEGIS-{(report_id or evaluation.get('config_id') or '00000000')[:8].upper()}"
     _current_report_meta["report_id"] = rid
     _current_report_meta["generated_at"] = generated_at.strftime(f"%Y-%m-%d %H:%M {tz_label}")

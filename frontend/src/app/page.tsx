@@ -12,12 +12,39 @@ export default function OverviewPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([getStats(), getRecentConfigs()])
-      .then(([s, r]) => {
+    let cancelled = false;
+    // The backend loads its embedding model on startup (10-30s+), so a page
+    // load right after starting both servers can race a backend that isn't
+    // listening yet - fetch() throws a bare "Failed to fetch" for that, with
+    // nothing distinguishing it from the backend being genuinely down.
+    // Retry through the boot window before surfacing an error.
+    const MAX_ATTEMPTS = 6;
+    const RETRY_DELAY_MS = 2000;
+
+    async function load(attempt: number) {
+      try {
+        const [s, r] = await Promise.all([getStats(), getRecentConfigs()]);
+        if (cancelled) return;
         setStats(s);
         setRecent(r);
-      })
-      .catch((e) => setError(e instanceof Error ? e.message : String(e)));
+        setError(null);
+      } catch (e) {
+        if (cancelled) return;
+        if (attempt < MAX_ATTEMPTS) {
+          setTimeout(() => load(attempt + 1), RETRY_DELAY_MS);
+          return;
+        }
+        setError(
+          "Could not reach the AEGIS backend. Make sure it's running at " +
+            "http://localhost:8000, then refresh this page."
+        );
+      }
+    }
+
+    load(1);
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return (
