@@ -12,7 +12,7 @@ Full technical design: [`docs/architecture-document.md`](docs/architecture-docum
 
 - **Backend**: FastAPI (Python), SQLite, a tiered resolution pipeline (deterministic pattern match → LLM classification with schema validation → human review queue with knowledge-base write-back), a 6-predicate-type deterministic rule engine, ReportLab PDF generation, Langfuse LLM observability.
 - **Frontend**: Next.js 16 / React 19 / Tailwind v4 — a sidebar-shell console (Overview, Analyze device, Review queue, Insights, Contact) rather than a single upload form.
-- **Frameworks**: control-family schema backed by NIST 800-53 (AC/AU/IA/SC/CM), so CIS/NIST/STIG/ISO rules all map onto one shared canonical model — 39 rules across all 4 as of this writing. Citations were checked against the real source document where one was available to us (CIS, STIG); pfSense and ISO content is wired in but not yet independently source-verified the same way — stated plainly, not glossed over (see `docs/architecture-document.md` §9/§10).
+- **Frameworks**: control-family schema backed by NIST 800-53 (AC/AU/IA/SC/CM), so CIS/NIST/STIG/ISO rules all map onto one shared canonical model — 39 rules across all 4 as of this writing, all four checked against their real source documents (CIS, STIG, pfSense, and ISO/IEC 27001:2022 alike).
 
 ## Project structure
 

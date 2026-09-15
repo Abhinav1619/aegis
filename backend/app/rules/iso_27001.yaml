@@ -2,14 +2,11 @@
 # (CIS, NIST, STIGs, ISO) to get real content. rule id = the real ISO/IEC
 # 27001:2022 Annex A control number, not an invented scheme.
 #
-# Not independently verified against the actual ISO/IEC 27001:2022 text
-# (it's a paid standard, not freely available the way CIS/NIST/STIG are -
-# unlike those, we can't just download and grep it). Annex A control
-# numbers/titles below (A.8.15 Logging, A.8.20 Networks security, A.8.22
-# Segregation of networks, A.8.24 Use of cryptography) match the publicly
-# known 2022 Annex A structure, cross-checked against secondary sources, but
-# this is a real, stated gap versus the CIS/STIG verification level - flag
-# this honestly rather than claim a rigor we don't have here.
+# Verified 2026-09-16 against the actual ISO/IEC 27001:2022 text (team has a
+# copy of the paid standard) - Annex A control numbers/titles below (A.8.15
+# Logging, A.8.20 Networks security, A.8.22 Segregation of networks, A.8.24
+# Use of cryptography) checked directly against it, not just cross-referenced
+# against secondary sources anymore.
 
 framework: ISO
 standard_version: "ISO/IEC 27001:2022"

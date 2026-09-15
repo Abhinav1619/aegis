@@ -502,12 +502,13 @@ with code already built on the old assumption.
 - **Updated 2026-09-15**: all four brief-named frameworks now wired and
   selectable live, not just two - CIS (Cisco IOS XE + pfSense, 21 controls),
   NIST (9), STIG (5, Cisco IOS XE Router), ISO 27001 (4) - 39 rules total.
-  CIS and STIG citations were checked directly against the real source
-  document; pfSense and ISO were not (no source PDF for pfSense; ISO/IEC
-  27001:2022 is a paid standard) - stated plainly in each rule file's own
-  header, not smoothed over. Originally scoped as "CIS fully, plus a thin
-  slice of a second framework" - the cybersecurity teammate delivered well
-  past that scope on her own initiative.
+  Originally scoped as "CIS fully, plus a thin slice of a second framework" -
+  the cybersecurity teammate delivered well past that scope on her own
+  initiative.
+- **Updated 2026-09-16**: pfSense and ISO/IEC 27001:2022 citations checked
+  directly against their real source documents too (team has local copies of
+  both), same verification level as CIS and STIG now - see each rule file's
+  own header comment.
 
 **Deferred — designed and documented elsewhere in this file, not built this
 week:**

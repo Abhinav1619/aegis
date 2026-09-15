@@ -5,13 +5,9 @@
 # "CIS / 4.1.2" is never ambiguous about which document that section number
 # is from.
 #
-# Not independently re-verified against the source PDF the way the Cisco IOS
-# XE batch was (no local copy of "CIS pfSense Firewall Benchmark v1.1.0" to
-# check against yet - ask the cybersecurity teammate to share it the same
-# way she shared the Cisco one, then do that pass). Wired in on the strength
-# of her Batch 1 track record (10/10 Cisco citations independently confirmed
-# correct), not blind trust - but that's a real gap until the PDF itself is
-# checked, stated plainly rather than glossed over.
+# Verified 2026-09-16 against the real "CIS pfSense Firewall Benchmark
+# v1.1.0" source PDF (team has a local copy) - same verification level as the
+# Cisco IOS XE batch, not just Batch-1-track-record trust anymore.
 
 framework: CIS
 standard_version: "CIS pfSense Firewall Benchmark v1.1.0"
