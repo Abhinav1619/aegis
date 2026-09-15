@@ -28,10 +28,16 @@ def fingerprint(raw_text: str) -> dict:
             return {"vendor": "sonic", "version_family": "sonic", "format": "json", "confidence": "high"}
         return {"vendor": "unknown_json", "version_family": None, "format": "json", "confidence": "low"}
 
-    # pfSense config.xml
+    # pfSense config.xml - gated on the actual <pfsense> root tag, not just
+    # "this is XML" (a bug: any other vendor's XML export, e.g. Juniper's
+    # XML API output, was getting labeled "pfsense" at high confidence -
+    # wrong vendor identification AND wrong (pfSense) remediation text
+    # shown for a non-pfSense device).
     head = stripped[:2000]
-    if stripped.startswith("<?xml") or "<pfsense>" in head:
+    if "<pfsense>" in head:
         return {"vendor": "pfsense", "version_family": "netgate", "format": "xml", "confidence": "high"}
+    if stripped.startswith("<?xml"):
+        return {"vendor": "unknown_xml", "version_family": None, "format": "xml", "confidence": "low"}
 
     # Cisco IOS - version banner + vty lines is a strong signal together;
     # either alone is a weaker (medium-confidence) signal.

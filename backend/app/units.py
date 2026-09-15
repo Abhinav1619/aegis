@@ -12,6 +12,14 @@ pointing at another). Demo control sets are chosen to not need it.
 import json
 import xml.etree.ElementTree as ET
 
+# SONiC's ACL_RULE table (config_db.json) - action/protocol vocab mapped to
+# the same vocabulary the Cisco-oriented ACL parser (rule_engine.py's
+# _parse_acl_line) already understands, so a synthesized line flows through
+# that SAME parser unchanged rather than needing a second, vendor-specific
+# ACL evaluator.
+_SONIC_PROTO_NUM_TO_NAME = {"1": "icmp", "6": "tcp", "17": "udp"}
+_SONIC_ACTION_MAP = {"FORWARD": "permit", "ACCEPT": "permit", "DROP": "deny", "REJECT": "deny", "DENY": "deny"}
+
 
 def split_into_units(raw_text: str, fmt: str) -> list:
     if fmt == "json":
@@ -31,10 +39,53 @@ def _split_cli(raw_text: str) -> list:
     return units
 
 
+def _flatten_acl_rule_table(rule_table: dict) -> list:
+    """SONiC's ACL_RULE table rows are each already one flat dict, keyed
+    "<ACL_TABLE_NAME>|<RULE_NAME>" - e.g. {"PRIORITY": "9999",
+    "PACKET_ACTION": "DROP", "IP_PROTOCOL": "6", "L4_DST_PORT": "23"}.
+    Generic recursive flattening shreds that one rule into 4 separate,
+    order-losing leaf units - exactly why ordered-first-match ACL evaluation
+    could never parse a real SONiC device's rules (found via manual testing
+    2026-09-15: every ACL-dependent finding came back NOT_EVALUATED with
+    "no ACL line could be parsed", even though the rule data was right
+    there). Reassemble each row into ONE Cisco-ACL-syntax line instead, so
+    it flows through the existing parser (rule_engine.py's _parse_acl_line)
+    unchanged - no second, vendor-specific ACL evaluator needed.
+    """
+    rows = []
+    for rule_key, attrs in rule_table.items():
+        if not isinstance(attrs, dict):
+            continue
+        action = _SONIC_ACTION_MAP.get(str(attrs.get("PACKET_ACTION", "")).upper())
+        if action is None:
+            continue  # unrecognized action - don't guess, drop this row
+        proto_num = str(attrs.get("IP_PROTOCOL", ""))
+        proto = _SONIC_PROTO_NUM_TO_NAME.get(proto_num, proto_num or "ip")
+        src = attrs.get("SRC_IP", "any")
+        dst = attrs.get("DST_IP", "any")
+        port = attrs.get("L4_DST_PORT")
+        line = f"access-list 100 {action} {proto} {src} {dst}"
+        if port:
+            line += f" eq {port}"
+        try:
+            priority = int(attrs.get("PRIORITY", 0) or 0)
+        except (TypeError, ValueError):
+            priority = 0
+        rows.append((priority, line))
+    # Higher SONiC PRIORITY is evaluated first - preserve that order since
+    # first-match evaluation depends on it, same as Cisco ACL line order in
+    # the original config mattering for the same predicate.
+    rows.sort(key=lambda r: r[0], reverse=True)
+    return [line for _, line in rows]
+
+
 def _flatten_json(obj, prefix: str = "") -> list:
     units = []
     if isinstance(obj, dict):
         for k, v in obj.items():
+            if k == "ACL_RULE" and prefix == "" and isinstance(v, dict):
+                units.extend(_flatten_acl_rule_table(v))
+                continue
             path = f"{prefix}.{k}" if prefix else str(k)
             child_units = _flatten_json(v, path)
             if not child_units:
