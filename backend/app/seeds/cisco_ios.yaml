@@ -1,0 +1,60 @@
+# Tier-1 seed KB for cisco_ios - exact-match only (architecture-document.md
+# §1/§3 step 4: Tier 1 is deterministic exact/structural match, not a
+# learned generalization). Two kinds of entries here:
+#
+# 1. Tied to this specific demo sample (samples/cisco_ios_sample.txt) -
+#    won't match a differently-worded real config, and isn't meant to; a
+#    genuinely new line correctly falls through to Tier 2/3, which is by
+#    design, not a gap.
+# 2. Genuinely general despite being "exact match", because redaction
+#    normalizes the variable part away first - e.g. every type-5 `enable
+#    secret` line redacts to the exact same text regardless of the real
+#    hash, so that entry matches ANY cisco_ios config using that type, not
+#    just this sample's.
+#
+# Found and fixed 2026-09-15: before this file existed, there was no Tier-1
+# seeding at all despite architecture-document.md describing Cisco IOS as
+# "Seeded Tier 1" - every prior "Tier 1 hit" in testing actually came from
+# accumulated manual review-queue confirmations in a dev DB that isn't
+# committed anywhere (*.db is gitignored). A fresh clone + fresh DB
+# following this repo's own README would have hit Tier 2 cold for
+# "transport input ssh" and gotten it wrong every time (see resolve.py's
+# docstring is aspirational without this file) - verified via a direct
+# repeated Tier-2 test, not assumed.
+
+vendor: cisco_ios
+entries:
+  - syntax_pattern: "transport input ssh"
+    canonical_field: AC.telnet_enabled
+    value: false
+
+  - syntax_pattern: "ip ssh version 2"
+    canonical_field: IA.ssh_version
+    value: 2
+
+  - syntax_pattern: "service password-encryption"
+    canonical_field: IA.password_encryption_enabled
+    value: true
+
+  # General (redaction-normalized) - matches any cisco_ios config using
+  # that enable-secret type, not just this sample's specific hash.
+  - syntax_pattern: "enable secret 5 <REDACTED:ENABLE_SECRET_HASH>"
+    canonical_field: AC.privileged_password_type
+    value: secret_type_5
+  - syntax_pattern: "enable secret 8 <REDACTED:ENABLE_SECRET_HASH>"
+    canonical_field: AC.privileged_password_type
+    value: secret_type_8
+  - syntax_pattern: "enable secret 9 <REDACTED:ENABLE_SECRET_HASH>"
+    canonical_field: AC.privileged_password_type
+    value: secret_type_9
+
+  # Sample-specific (tied to this exact IP/ACL text).
+  - syntax_pattern: "logging host 10.0.0.5"
+    canonical_field: AU.logging_host
+    value: "10.0.0.5"
+  - syntax_pattern: "access-list 101 deny tcp any any eq 23"
+    canonical_field: AC.acl_rules
+    value: "access-list 101 deny tcp any any eq 23"
+  - syntax_pattern: "access-list 101 permit ip any any"
+    canonical_field: AC.acl_rules
+    value: "access-list 101 permit ip any any"

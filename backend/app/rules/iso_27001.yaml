@@ -1,0 +1,57 @@
+# First-ever ISO rule content - the 4th and last brief-named framework
+# (CIS, NIST, STIGs, ISO) to get real content. rule id = the real ISO/IEC
+# 27001:2022 Annex A control number, not an invented scheme.
+#
+# Not independently verified against the actual ISO/IEC 27001:2022 text
+# (it's a paid standard, not freely available the way CIS/NIST/STIG are -
+# unlike those, we can't just download and grep it). Annex A control
+# numbers/titles below (A.8.15 Logging, A.8.20 Networks security, A.8.22
+# Segregation of networks, A.8.24 Use of cryptography) match the publicly
+# known 2022 Annex A structure, cross-checked against secondary sources, but
+# this is a real, stated gap versus the CIS/STIG verification level - flag
+# this honestly rather than claim a rigor we don't have here.
+
+framework: ISO
+standard_version: "ISO/IEC 27001:2022"
+rules:
+  - id: ISO-A.8.15
+    title: "Logging must be implemented for security-relevant activities"
+    control_family: AU
+    check_type: boolean
+    predicate: { field: AU.logging_enabled, equals: true }
+    severity: CAT_II
+    remediation_template_ref: CIS-2.2.1
+    # Reuses the same real Cisco remediation as CIS-2.2.1/NIST-AU-2 - same
+    # underlying device setting satisfies all three framework's logging
+    # control at this level of detail.
+
+  - id: ISO-A.8.20
+    title: "Network security must be maintained"
+    control_family: AC
+    check_type: ordered-first-match
+    predicate:
+      field: AC.acl_rules
+      match: { protocol: tcp, port: 23 }
+      want_action_if_matched: deny
+    severity: CAT_I
+    remediation_template_ref: CIS-SUPPLEMENT-ACL-TELNET
+
+  - id: ISO-A.8.22
+    title: "Networks must be segregated according to security requirements"
+    control_family: SC
+    check_type: boolean
+    predicate: { field: SC.network_segmentation, equals: true }
+    severity: CAT_I
+    remediation_template_ref: null
+    # No generic remediation template - "configure segmentation" is a
+    # network-design decision (VLANs/zones/ACLs), not a single CLI command
+    # the way the other rules have one. Will show NOT_EVALUATED until this
+    # field has a real seed pattern or Tier-2 example for any vendor.
+
+  - id: ISO-A.8.24
+    title: "Cryptography must be used according to approved security requirements"
+    control_family: SC
+    check_type: set-membership
+    predicate: { field: SC.enabled_ciphers, mode: none_in, values: ["des", "3des", "rc4", "md5", "sha1"] }
+    severity: CAT_II
+    remediation_template_ref: null

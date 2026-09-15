@@ -10,6 +10,7 @@ from .db import get_db, init_db
 from .llm_client import langfuse
 from .models import CanonicalConfig, Device, Finding, KnowledgeBaseEntry, ReviewQueueItem, Rule
 from .rules_loader import load_rule_files
+from .seed_loader import load_seed_kb
 from .schemas import ConfirmMapping, RejectMapping
 
 def _iso_utc(d: dt.datetime | None) -> str | None:
@@ -45,6 +46,8 @@ def _startup():
     try:
         n = load_rule_files(db)
         print(f"Loaded {n} new/updated rules from backend/app/rules/*.yaml")
+        n_seed = load_seed_kb(db)
+        print(f"Loaded {n_seed} new/updated Tier-1 seed KB entries from backend/app/seeds/*.yaml")
     finally:
         db.close()
 

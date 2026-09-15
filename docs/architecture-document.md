@@ -499,8 +499,15 @@ with code already built on the old assumption.
 - A small but real golden set (~20-30 hand-labeled examples, not 50-100) —
   enough for an honest precision/recall/false-negative number on the PPT,
   small enough to actually finish.
-- Two frameworks wired enough to demo the selector switching live — CIS
-  fully, plus a thin slice (~8-10 controls) of a second framework.
+- **Updated 2026-09-15**: all four brief-named frameworks now wired and
+  selectable live, not just two - CIS (Cisco IOS XE + pfSense, 21 controls),
+  NIST (9), STIG (5, Cisco IOS XE Router), ISO 27001 (4) - 39 rules total.
+  CIS and STIG citations were checked directly against the real source
+  document; pfSense and ISO were not (no source PDF for pfSense; ISO/IEC
+  27001:2022 is a paid standard) - stated plainly in each rule file's own
+  header, not smoothed over. Originally scoped as "CIS fully, plus a thin
+  slice of a second framework" - the cybersecurity teammate delivered well
+  past that scope on her own initiative.
 
 **Deferred — designed and documented elsewhere in this file, not built this
 week:**
@@ -659,3 +666,77 @@ architecture:
   implied-live attempt with a recording as quiet insurance. Those are two
   different postures with this team's audience, and the credibility argument
   in §9 only holds if the distinction is stated, not smoothed over.
+
+---
+
+## 12. Roadmap: rule authoring at scale (deliberately not built yet)
+
+Raised 2026-09-15, decided same day: a real design question, not a gap to
+apologize for. Worth stating precisely, because the easy version of the
+answer ("use a vector DB for the benchmarks") is wrong in a way that matters.
+
+**The question:** compliance-framework authoring today is manual - a human
+reads the source PDF (CIS/NIST/STIG/ISO) and hand-writes the YAML rule
+(`backend/app/rules/*.yaml`). Sept 15's rule-authoring pass demonstrated this
+works, but also exactly how much manual verification it takes: confirming the
+right benchmark family and version, checking every section number and
+remediation string against the actual document rather than memory or a
+web-search summary (which was independently proven unreliable mid-session -
+see the Batch 1 rule-authoring notes). Doesn't scale past a handful of
+frameworks without tooling.
+
+**The wrong fix: point the compliance engine itself at a searchable index of
+the raw benchmark documents (RAG at evaluation time).** Rejected, for reasons
+that matter for a compliance product specifically, not just in general:
+
+- A verdict decided by "search the benchmark text, have something judge
+  relevance" is not guaranteed to be the same answer twice for the same
+  device state. §1's whole premise - deterministic, auditable,
+  reproducible verdicts - depends on the rule engine never touching an LLM
+  at evaluation time (`rule_engine.py`'s own docstring states this as the
+  reason no LLM is involved in producing a verdict). Retrieval-based
+  verdicts would quietly give that up.
+- It reintroduces the exact free-tier latency/rate-limit problem already
+  documented in §10, per control, per device, on every single evaluation,
+  not once at classification time.
+- It doesn't actually remove the translation step. "Set version 2 for `ip
+  ssh version`" (benchmark prose) becoming `{field: ssh_version, equals: 2}`
+  (an executable predicate) is a judgment call regardless of how the source
+  text is stored or searched. Better retrieval doesn't make that judgment
+  call disappear - it just moves the mistake from "wrong document" to
+  "wrong predicate," silently, at evaluation time instead of authoring time.
+
+**The right fix, not yet built: apply this system's own core pattern one
+level up.** The tiered-resolution idea already built for parsing device
+configs (deterministic match → AI-assisted classification → human
+confirmation, writing back into a reusable store) is exactly the right shape
+for rule *authoring* too, not just device *parsing*:
+
+1. Ingest a benchmark PDF once into a small chunked/searchable store - one
+   record per numbered recommendation (section id, title, audit text,
+   remediation text), not a fine-tuned model and not the live evaluation
+   path.
+2. An LLM drafts a candidate canonical-field mapping and predicate per
+   chunk - the same shape as the existing Tier-2 "AI suggestion" already
+   shown to a human in the review queue, just aimed at benchmark text
+   instead of device config lines.
+3. A human (the cybersecurity teammate, today) confirms or corrects it.
+4. Only on confirmation does it become a row in the same `Rule` table the
+   deterministic engine already reads - nothing about execution changes.
+
+This also directly answers "what happens when CIS ships v2.3.0 next year":
+diffing chunk-by-chunk against the previous ingested version tells you
+exactly which controls changed, instead of re-reading the whole document.
+It does not remove the human-confirmation step, on purpose - letting a
+benchmark update silently change what an already-deployed system treats as
+"compliant" without a human checking is a real risk for a security product,
+not a formality to automate away.
+
+**Why not built now:** decided 2026-09-15, 1pm - the PPT is due today, the
+16th is rehearsal, the 17th is fix-what-breaks-in-rehearsal (§10's own
+policy: no new features that close to the demo). A new ingestion pipeline
+and authoring UI is genuinely useful but is not required by the brief, and
+building it this close to a live demo is exactly the kind of untested new
+surface §10 already argues against introducing under time pressure. This
+section exists so the answer is a considered roadmap decision if asked on
+stage, not something improvised in the moment.

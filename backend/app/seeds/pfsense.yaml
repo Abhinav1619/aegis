@@ -1,0 +1,13 @@
+# Tier-1 seed KB for pfsense - see cisco_ios.yaml's header for the general
+# approach. Deliberately minimal: pfSense's filter.rule[N].* fields
+# (type/protocol/destination.port split across separate flattened units)
+# are the documented cross-reference-linking gap (architecture-document.md
+# §3.5) - seeding a fake combined ACL value here would paper over a
+# limitation that's supposed to stay visible, not hide it. Only the one
+# field that maps cleanly to a single atomic unit is seeded.
+
+vendor: pfsense
+entries:
+  - syntax_pattern: "pfsense.syslog.remoteserver=10.0.0.5"
+    canonical_field: AU.logging_host
+    value: "10.0.0.5"

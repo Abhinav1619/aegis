@@ -1,45 +1,121 @@
-# STARTER/PLACEHOLDER slice - same status as cis_ios_v1.2.yaml: written by
+# STARTER/PLACEHOLDER slice - same status as cis_ios_xe_17.yaml: written by
 # lead+Claude to make the multi-framework selector actually demonstrable
 # today, pending the cybersecurity teammate's real NIST 800-53 authoring
-# pass (team-task-assignments.md). Do not cite these control numbers
-# externally until she's verified them against the real NIST SP 800-53 Rev 5
-# text. Reuses the same canonical fields as the CIS rules on purpose - one
-# field can legitimately be checked by more than one framework's rule.
+# pass (team-task-assignments.md). Reuses the same canonical fields as the
+# CIS rules on purpose - one field can legitimately be checked by more than
+# one framework's rule.
+#
+# 2026-09-15: the cybersecurity teammate's "Batch 1" reviewed these citations
+# against real NIST SP 800-53 Rev 5 control text (not verified independently
+# here the way the CIS PDF was - NIST 800-53 itself wasn't re-read control by
+# control, her citations are taken as authored). Two real corrections
+# resulted: AC-17 -> AC-17(2) and IA-5 -> IA-5(1)(d) are precise enhancement
+# citations, not the bare parent controls; and the logging rule was
+# previously mis-cited as AU-3 ("Content of Audit Records" - what's IN a log
+# entry) when AU-2 ("Event Logging" - whether logging happens at all) is
+# actually correct for what AU.logging_enabled checks.
+#
+# remediation_template_ref values point at the same verified CIS Cisco IOS
+# XE 17.x commands as cis_ios_xe_17.yaml - the underlying device setting is
+# the same regardless of which framework is asking about it.
 
 framework: NIST
 standard_version: "SP 800-53 Rev 5 (draft slice)"
 rules:
-  - id: NIST-AC-17
-    title: "Remote access must use an encrypted protocol (AC-17)"
+  - id: NIST-AC-17-2
+    title: "Remote access sessions must be protected using encryption (AC-17(2))"
     control_family: AC
     check_type: boolean
     predicate: { field: AC.telnet_enabled, equals: false }
     severity: CAT_I
-    remediation_template_ref: CIS-CISCO-3.1
+    remediation_template_ref: CIS-1.2.2
 
   - id: NIST-IA-7
     title: "Cryptographic module authentication - SSHv2 minimum (IA-7)"
     control_family: IA
     check_type: range
-    predicate: { field: IA.ssh_version, min: 2 }
+    predicate: { field: IA.ssh_version, min: 2, max: 2 }
     severity: CAT_I
-    remediation_template_ref: CIS-CISCO-3.2
+    remediation_template_ref: CIS-2.1.1.2
+    # Same min/max fix as CIS-2.1.1.2 - not part of her batch (she didn't
+    # touch this rule specifically) but the same underlying bug applies.
 
-  - id: NIST-IA-5
-    title: "Authenticator (password) management - storage protection (IA-5)"
+  - id: NIST-IA-5-1-d
+    title: "Password-based authenticators must receive approved cryptographic protection (IA-5(1)(d))"
     control_family: IA
     check_type: boolean
     predicate: { field: IA.password_encryption_enabled, equals: true }
     severity: CAT_II
-    remediation_template_ref: CIS-CISCO-3.3
+    remediation_template_ref: CIS-1.4.2
+    # Caution carried over from her notes: don't present Cisco's
+    # `service password-encryption` as if it satisfies this NIST requirement
+    # on its own - the CIS benchmark itself calls that mechanism weak
+    # (reversible, not modern hashing). This rule checks the same field as a
+    # starting point, not a claim of equivalence.
 
-  - id: NIST-AU-3
-    title: "Content of audit records must support accountability (AU-3)"
+  - id: NIST-AU-2
+    title: "Security-relevant events must be logged (AU-2)"
     control_family: AU
     check_type: boolean
     predicate: { field: AU.logging_enabled, equals: true }
     severity: CAT_III
+    remediation_template_ref: CIS-2.2.1
+    # Was `NIST-AU-3` - AU-3 is "Content of Audit Records" (what fields a
+    # log entry contains), which isn't what this field checks. AU-2 ("Event
+    # Logging" - whether logging happens at all) is the correct citation for
+    # a plain enabled/disabled check. Renamed the id itself, not just the
+    # title, since the id claims a specific control number.
+
+  - id: NIST-AU-4-1
+    title: "Audit records should be transferred to alternate storage (AU-4(1))"
+    control_family: AU
+    check_type: boolean
+    predicate: { field: AU.logging_host, equals: true }
+    severity: CAT_III
+    remediation_template_ref: CIS-2.2.4
+    # Same non-empty-list trick as CIS-2.2.4 - see that rule's comment.
+    # Distinct from NIST-AC-4 below despite the similar-looking id: AC-4 is
+    # Access Control ("Information Flow Enforcement"), AU-4 is Audit and
+    # Accountability ("Audit Log Storage Capacity") - unrelated controls
+    # that happen to share a number.
+
+  - id: NIST-SC-8-1
+    title: "Cryptographic mechanisms must protect transmission confidentiality and integrity (SC-8(1))"
+    control_family: SC
+    check_type: set-membership
+    predicate: { field: SC.enabled_ciphers, mode: none_in, values: ["ssl3", "rc4", "3des", "des", "md5", "export"] }
+    severity: CAT_I
     remediation_template_ref: null
+
+  - id: NIST-SC-13
+    title: "Approved cryptographic algorithms must be used (SC-13)"
+    control_family: SC
+    check_type: set-membership
+    predicate: { field: SC.enabled_ciphers, mode: none_in, values: ["ssl3", "rc4", "3des", "des", "md5", "export"] }
+    severity: CAT_II
+    remediation_template_ref: null
+    # SC-8(1) and SC-13 above intentionally check the same field/deny-list -
+    # confidentiality-in-transit and "use approved algorithms" collapse to
+    # the same practical check at this level of detail; NIST treats them as
+    # distinct controls, so both are cited rather than merged into one rule.
+    # Neither has real parsing support yet for any of the 3 sample vendors
+    # (no vendor's cipher-suite config is currently extracted into
+    # SC.enabled_ciphers) - both will show NOT_EVALUATED, honestly, rather
+    # than a fabricated PASS, until that exists. No remediation template for
+    # the same reason: there's nothing vendor-specific to hand back yet.
+
+  - id: NIST-AU-9
+    title: "Audit information must be protected from unauthorized access, modification, or deletion (AU-9)"
+    control_family: AU
+    check_type: boolean
+    predicate: { field: AU.log_access_restricted, equals: true }
+    severity: CAT_II
+    remediation_template_ref: null
+    # New field, no seed KB pattern or Tier-2 prompt example yet for any of
+    # the 3 sample vendors - will show NOT_EVALUATED until that exists. No
+    # remediation template either: "restrict log access" is enforced through
+    # AAA/RBAC configuration, which is too vendor- and topology-specific for
+    # a single generic command the way the other rules have one.
 
   - id: NIST-AC-4
     title: "Information flow enforcement - no unrestricted Telnet ingress (AC-4)"
@@ -50,4 +126,17 @@ rules:
       match: { protocol: tcp, port: 23 }
       want_action_if_matched: deny
     severity: CAT_I
-    remediation_template_ref: CIS-CISCO-3.4
+    remediation_template_ref: CIS-SUPPLEMENT-ACL-TELNET
+    # See cis_ios_xe_17.yaml's CIS-SUPPLEMENT-ACL-TELNET comment - this is
+    # the same defense-in-depth check, not backed by a specific NIST 800-53
+    # sub-clause either. The remediation commands are still real and
+    # correct regardless of the citation gap, so it keeps a template.
+    #
+    # Her proposed SC-7(5) ("deny by default / allow by exception") is the
+    # more textbook-correct NIST citation for ACL-ordering behavior, but
+    # implementing it properly means checking "does the rule list end in an
+    # explicit catch-all deny," which is a different shape than
+    # ordered-first-match's "first rule matching a given protocol/port" -
+    # that needs a new predicate type, not a mis-fit reuse of this one.
+    # Deferred rather than forced in; NIST-AC-4 stays as the closest
+    # existing rule to that idea.

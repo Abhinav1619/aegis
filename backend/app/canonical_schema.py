@@ -57,6 +57,91 @@ FIELD_METADATA = {
         "label": "Allowed encryption ciphers",
         "description": "Which cryptographic cipher suites this device is configured to accept.",
     },
+    "AC.privileged_password_type": {
+        "type": "scalar",
+        "label": "Privileged access password type",
+        "description": "How the privileged (enable) password is protected - e.g. a strong hashed 'enable secret' vs a weaker/plaintext 'enable password'.",
+    },
+    "AC.session_idle_timeout_minutes": {
+        "type": "scalar",
+        "label": "Session idle timeout",
+        "description": "How many minutes an idle administrative session is left open before being disconnected.",
+    },
+    "AC.snmp_community_strings": {
+        "type": "list",
+        "label": "SNMP community strings",
+        "description": "SNMP community strings configured on this device (should never be a default like 'public' or 'private').",
+    },
+    "AC.login_banner_configured": {
+        "type": "scalar",
+        "label": "Login banner",
+        "description": "Whether a legal/warning banner is shown before a user logs in.",
+    },
+    "AC.vty_access_class": {
+        "type": "scalar",
+        "label": "VTY management restriction",
+        "description": "Whether remote-management (VTY) lines are restricted to specific hosts/networks via an access-class.",
+    },
+    "AU.log_access_restricted": {
+        "type": "scalar",
+        "label": "Log access restricted",
+        "description": "Whether access to stored audit logs and logging configuration is itself restricted to authorized administrators.",
+    },
+    "AU.ntp_authentication_enabled": {
+        "type": "scalar",
+        "label": "NTP authentication",
+        "description": "Whether time-sync (NTP) messages are cryptographically authenticated, preventing a spoofed time source from skewing logs/certs.",
+    },
+    "SC.ip_source_routing_enabled": {
+        "type": "scalar",
+        "label": "IP source routing",
+        "description": "Whether the device honors source-routed packets (attacker-specified paths) - should be disabled.",
+    },
+    "SC.proxy_arp_enabled": {
+        "type": "scalar",
+        "label": "Proxy ARP",
+        "description": "Whether the device answers ARP requests on behalf of other hosts - normally should be disabled on external-facing interfaces.",
+    },
+    "SC.pad_enabled": {
+        "type": "scalar",
+        "label": "PAD service",
+        "description": "Whether the legacy Packet Assembler/Disassembler (X.25) service is enabled - should be disabled if unused.",
+    },
+    "SC.webgui_protocol": {
+        "type": "scalar",
+        "label": "Web management protocol",
+        "description": "Whether the device's web-based admin interface enforces HTTPS (true) rather than allowing plain HTTP (false).",
+    },
+    "AU.firewall_rule_logging": {
+        "type": "scalar",
+        "label": "Firewall rule logging",
+        "description": "Whether individual firewall/filter rules are configured to log matching traffic.",
+    },
+    "SC.routing_authentication": {
+        "type": "scalar",
+        "label": "Routing protocol authentication",
+        "description": "Whether routing-protocol neighbor sessions require cryptographic authentication.",
+    },
+    "SC.control_plane_protection": {
+        "type": "scalar",
+        "label": "Control plane protection",
+        "description": "Whether Control Plane Policing/Protection is configured to shield the device's own management/routing processes from excessive or unauthorized traffic.",
+    },
+    "SC.ipv6_ra_suppression": {
+        "type": "scalar",
+        "label": "IPv6 router advertisement suppression",
+        "description": "Whether the device is configured to suppress outgoing IPv6 Router Advertisements on external-facing interfaces.",
+    },
+    "SC.external_interface_cdp": {
+        "type": "scalar",
+        "label": "CDP on external interfaces",
+        "description": "Whether Cisco Discovery Protocol is enabled on interfaces facing outside the organization's network (should be disabled - CDP leaks device details to anything listening).",
+    },
+    "SC.network_segmentation": {
+        "type": "scalar",
+        "label": "Network segmentation",
+        "description": "Whether security-sensitive networks/systems are logically separated (VLANs, zones, ACLs) rather than sharing one flat network.",
+    },
 }
 
 # Back-compat: field -> value type, used by resolve.py / llm_client.py.

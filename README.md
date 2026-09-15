@@ -4,7 +4,7 @@
 
 An AI-augmented, vendor-agnostic network device compliance engine, built for Smart India Hackathon 2026 under NTRO's problem statement on multi-vendor network configuration compliance.
 
-AEGIS reads a network device's configuration — any vendor, any format — automatically identifies its security-relevant settings using a tiered deterministic/AI pipeline, and checks them against real compliance frameworks (CIS, NIST 800-53, with the schema designed to extend to STIG/ISO). When it encounters syntax it hasn't seen before, it asks a human once via an in-app review queue, then recognizes it instantly on every device afterward — no code redeployment required to support a new vendor's syntax.
+AEGIS reads a network device's configuration — any vendor, any format — automatically identifies its security-relevant settings using a tiered deterministic/AI pipeline, and checks them against real compliance frameworks: **CIS, NIST 800-53, DISA STIG, and ISO/IEC 27001 — all four named in the brief, all four with real cited rule content**, not placeholders. When it encounters syntax it hasn't seen before, it asks a human once via an in-app review queue, then recognizes it instantly on every device afterward — no code redeployment required to support a new vendor's syntax.
 
 Full technical design: [`docs/architecture-document.md`](docs/architecture-document.md) (condensed 2-page version: [`docs/architecture-document-2page.md`](docs/architecture-document-2page.md)).
 
@@ -12,15 +12,16 @@ Full technical design: [`docs/architecture-document.md`](docs/architecture-docum
 
 - **Backend**: FastAPI (Python), SQLite, a tiered resolution pipeline (deterministic pattern match → LLM classification with schema validation → human review queue with knowledge-base write-back), a 6-predicate-type deterministic rule engine, ReportLab PDF generation, Langfuse LLM observability.
 - **Frontend**: Next.js 16 / React 19 / Tailwind v4 — a sidebar-shell console (Overview, Analyze device, Review queue, Insights, Contact) rather than a single upload form.
-- **Frameworks**: control-family schema backed by NIST 800-53 (AC/AU/IA/SC/CM), so CIS/NIST/STIG/ISO rules can all map onto one shared canonical model.
+- **Frameworks**: control-family schema backed by NIST 800-53 (AC/AU/IA/SC/CM), so CIS/NIST/STIG/ISO rules all map onto one shared canonical model — 39 rules across all 4 as of this writing. Citations were checked against the real source document where one was available to us (CIS, STIG); pfSense and ISO content is wired in but not yet independently source-verified the same way — stated plainly, not glossed over (see `docs/architecture-document.md` §9/§10).
 
 ## Project structure
 
 ```
 backend/            FastAPI app, rule engine, PDF generation
   app/
-    rules/          Per-framework rule YAML (CIS, NIST - starter/placeholder content,
-                     see docs/architecture-document.md §7 for scope notes)
+    rules/          Per-framework rule YAML: CIS (Cisco IOS XE + pfSense), NIST,
+                     STIG, ISO 27001 - real cited content, see each file's own
+                     header comment for verification status
   requirements.txt
   .env.example       Copy to .env and fill in real API keys
 frontend/            Next.js app

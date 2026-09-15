@@ -96,3 +96,11 @@ Cisco AAA method-lists), and entropy-based redaction beyond regex matching
 are all designed in the full reference document but deliberately not built
 at this stage — cut for time, not silently dropped, and none of them are the
 part of the system that answers the core brief.
+
+**Rule authoring is manual today (a person reads the benchmark PDF, writes
+the rule), by choice, not oversight.** The natural next step is applying this
+same tiered pattern one level up — ingest a benchmark once into a searchable
+store, let an LLM draft a candidate rule per control, a human confirms it —
+rather than pointing the *evaluation* engine itself at the raw documents,
+which would trade away the deterministic, reproducible verdicts §"one design
+decision" depends on. See `architecture-document.md` §12.

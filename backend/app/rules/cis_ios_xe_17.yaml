@@ -1,0 +1,236 @@
+# Section numbers/titles below verified 2026-09-15 directly against the real
+# CIS Cisco IOS XE 17.x Benchmark v2.2.1 PDF (the cybersecurity teammate
+# sourced it; the plain "CIS Cisco IOS" benchmark she originally found does
+# not exist in CIS's current catalog - Cisco IOS-family guidance is now
+# published only as IOS XE/XR/NX-OS/ASA. IOS XE is the right family for our
+# sample/canonical fields: it preserves the same VTY/SSH/logging/ACL CLI
+# surface classic IOS used, which is what this starter set already checks).
+#
+# Remediation commands were copied verbatim from the PDF's own Remediation
+# sections (backend/app/remediation.py), not reconstructed from memory.
+#
+# "Batch 1" (2026-09-15): the cybersecurity teammate independently verified
+# the first 5 controls below against the same PDF and caught two real bugs
+# in our original placeholder shapes (now fixed, see each rule's comment),
+# then authored + cited 5 more herself. All 10 checked directly against the
+# source PDF, not taken on her word alone - see the per-rule comments.
+#
+# "Batch 2" (2026-09-15, same day): she delivered a much larger second batch
+# spanning all 4 brief-named frameworks in one document - see
+# nist_800_53_slice.yaml, stig_cisco_ios_xe.yaml (new), iso_27001.yaml (new),
+# and cis_pfsense.yaml (new) for the rest. The 4 new rules below are her
+# additions to *this* file. Independently verified: CIS-2.3.1.1/3.1.1/3.1.2/
+# 2.1.7 section numbers were already confirmed present in the same PDF used
+# for Batch 1 (re-checked against the TOC pulled during that pass).
+#
+# Also added CIS-2.2.1 below - present in her Batch 1 doc but missed when
+# wiring that batch in (its remediation was reused for NIST-AU-2 but the
+# CIS-side rule itself was never added as its own entry - caught while
+# wiring in Batch 2, fixed now).
+#
+# Still not the full ~15-20 target: CIS-1.2.4 (VTY access-list creation) is
+# CIS's own "Manual"-rated companion to CIS-1.2.5 below and isn't automated
+# here for that reason, not an oversight.
+#
+# One control below (CIS-SUPPLEMENT-ACL-TELNET) is NOT a real CIS section
+# number - see its own comment for why it's here anyway.
+#
+# Schema matches models.py's Rule table: standard_ref (the YAML `id` below),
+# standard_version, control_family (NIST 800-53 family, used as the shared
+# cross-framework grouping - not a CIS concept, ours), check_type (one of
+# the 6 in rule_engine.py), predicate, severity (CAT_I/CAT_II/CAT_III),
+# framework, remediation_template_ref (key into remediation.py's TEMPLATES).
+
+framework: CIS
+standard_version: "CIS Cisco IOS XE 17.x Benchmark v2.2.1"
+rules:
+  - id: CIS-1.2.2
+    title: "Set 'transport input ssh' for 'line vty' connections"
+    control_family: AC
+    check_type: boolean
+    predicate: { field: AC.telnet_enabled, equals: false }
+    severity: CAT_I
+    remediation_template_ref: CIS-1.2.2
+    # PDF: "Automated", Level 1. Audit = only "ssh" should appear for
+    # "transport input" across all VTY lines.
+
+  - id: CIS-2.1.1.2
+    title: "Set version 2 for 'ip ssh version'"
+    control_family: IA
+    check_type: range
+    predicate: { field: IA.ssh_version, min: 2, max: 2 }
+    severity: CAT_I
+    remediation_template_ref: CIS-2.1.1.2
+    # PDF: "Manual", Level 1. Was `min: 2` alone (i.e. >=2) - the
+    # cybersecurity teammate caught that the benchmark specifically requires
+    # version 2, not "2 or higher" (Cisco's `ip ssh version` command doesn't
+    # even offer anything higher today, but the check should say what the
+    # benchmark says, not rely on that happening to be true). Fixed by
+    # bounding both ends rather than adding a new predicate shape.
+
+  - id: CIS-1.4.2
+    title: "Enable 'service password-encryption'"
+    control_family: IA
+    check_type: boolean
+    predicate: { field: IA.password_encryption_enabled, equals: true }
+    severity: CAT_II
+    remediation_template_ref: CIS-1.4.2
+    # PDF: "Automated", Level 1.
+
+  - id: CIS-2.2.4
+    title: "Set IP address for 'logging host'"
+    control_family: AU
+    check_type: boolean
+    predicate: { field: AU.logging_host, equals: true }
+    severity: CAT_III
+    remediation_template_ref: CIS-2.2.4
+    # PDF: "Automated", Level 1. PDF's own audit criterion is "verify one or
+    # more IP address(es) returns" - i.e. non-empty, not a match against one
+    # specific server. Was a set-membership check hard-coded against
+    # "10.0.0.5" (would fail any real config using a different syslog
+    # server) - the cybersecurity teammate caught the same bug independently.
+    # Fixed WITHOUT a new predicate type: rule_engine.py's boolean check
+    # falls back to plain Python truthiness for a non-bool/non-string value
+    # (_coerce_bool's `return bool(v)` line), and `bool([])` is False while
+    # `bool(["any", "ip"])` is True - so `check_type: boolean, equals: true`
+    # against a list field already means "this list is non-empty," with the
+    # existing engine, no code change needed.
+
+  - id: CIS-1.4.1
+    title: "Set 'password' for 'enable secret'"
+    control_family: AC
+    check_type: set-membership
+    predicate: { field: AC.privileged_password_type, mode: all_in, values: ["secret_type_8", "secret_type_9"] }
+    severity: CAT_I
+    remediation_template_ref: CIS-1.4.1
+    # PDF: "Automated", Level 1. PDF: Type 8 (PBKDF2/SHA-256) and Type 9
+    # (scrypt) are the two secure forms; Type 9 is IOS XE's default but not
+    # NIST-approved, which is why some auditors require Type 8 instead -
+    # both are accepted here, narrowing further is a site-policy choice, not
+    # a CIS requirement.
+
+  - id: CIS-1.2.8
+    title: "Set 'exec-timeout' to less than or equal to 10 minutes 'line vty'"
+    control_family: AC
+    check_type: range
+    predicate: { field: AC.session_idle_timeout_minutes, max: 10 }
+    severity: CAT_III
+    remediation_template_ref: CIS-1.2.8
+    # PDF: "Automated", Level 1.
+
+  - id: CIS-1.5.2
+    title: "Unset 'private' for 'snmp-server community'"
+    control_family: AC
+    check_type: set-membership
+    predicate: { field: AC.snmp_community_strings, mode: none_in, values: ["private"] }
+    severity: CAT_I
+    remediation_template_ref: CIS-1.5.2
+    # PDF: "Automated", Level 1. Kept as its own rule (not merged with
+    # 1.5.3) since CIS numbers and audits them as two independent
+    # recommendations.
+
+  - id: CIS-1.5.3
+    title: "Unset 'public' for 'snmp-server community'"
+    control_family: AC
+    check_type: set-membership
+    predicate: { field: AC.snmp_community_strings, mode: none_in, values: ["public"] }
+    severity: CAT_I
+    remediation_template_ref: CIS-1.5.3
+    # PDF: "Automated", Level 1.
+
+  - id: CIS-1.3.2
+    title: "Set the 'banner-text' for 'banner login'"
+    control_family: AC
+    check_type: boolean
+    predicate: { field: AC.login_banner_configured, equals: true }
+    severity: CAT_III
+    remediation_template_ref: CIS-1.3.2
+    # PDF: "Automated", Level 1.
+
+  - id: CIS-1.2.5
+    title: "Set 'access-class' for 'line vty'"
+    control_family: AC
+    check_type: boolean
+    predicate: { field: AC.vty_access_class, equals: true }
+    severity: CAT_II
+    remediation_template_ref: CIS-1.2.5
+    # PDF: "Automated", Level 1. CIS-1.2.4 ("Create 'access-list' for use
+    # with 'line vty'") is this control's companion but is rated "Manual" by
+    # CIS itself, not "Automated" - deliberately not turned into an
+    # automated AEGIS rule for that reason. This rule alone (whether an
+    # access-class is actually applied to the VTY lines) is what CIS itself
+    # audits automatically.
+    #
+    # Precision caveat, flagged by the cybersecurity teammate and confirmed
+    # here: AC.acl_rules (used elsewhere in this file) has no notion of
+    # which line/interface an ACL is attached to, so it can't answer "is
+    # this specific ACL the one restricting VTY." AC.vty_access_class is
+    # deliberately a separate, coarser boolean for that reason - it depends
+    # on Tier-2/Tier-3 classification recognizing an `access-class ... in`
+    # line specifically in VTY context, which hasn't been tested against a
+    # real config yet. Expect this to show NOT_EVALUATED until that's
+    # verified against an actual device export.
+
+  - id: CIS-2.2.1
+    title: "Set 'logging enable'"
+    control_family: AU
+    check_type: boolean
+    predicate: { field: AU.logging_enabled, equals: true }
+    severity: CAT_III
+    remediation_template_ref: CIS-2.2.1
+    # PDF: "Automated", Level 1. From her Batch 1 doc - see the file-header
+    # note on why this is only being added now.
+
+  - id: CIS-2.3.1.1
+    title: "Require NTP authentication"
+    control_family: AU
+    check_type: boolean
+    predicate: { field: AU.ntp_authentication_enabled, equals: true }
+    severity: CAT_II
+    remediation_template_ref: CIS-2.3.1.1
+
+  - id: CIS-3.1.1
+    title: "IP source routing must be disabled"
+    control_family: SC
+    check_type: boolean
+    predicate: { field: SC.ip_source_routing_enabled, equals: false }
+    severity: CAT_I
+    remediation_template_ref: CIS-3.1.1
+
+  - id: CIS-3.1.2
+    title: "Proxy ARP must be disabled"
+    control_family: SC
+    check_type: boolean
+    predicate: { field: SC.proxy_arp_enabled, equals: false }
+    severity: CAT_II
+    remediation_template_ref: CIS-3.1.2
+
+  - id: CIS-2.1.7
+    title: "PAD service must be disabled"
+    control_family: SC
+    check_type: boolean
+    predicate: { field: SC.pad_enabled, equals: false }
+    severity: CAT_II
+    remediation_template_ref: CIS-2.1.7
+
+  - id: CIS-SUPPLEMENT-ACL-TELNET
+    title: "No ACL rule may permit inbound Telnet (TCP/23) from any source"
+    control_family: AC
+    check_type: ordered-first-match
+    predicate:
+      field: AC.acl_rules
+      match: { protocol: tcp, port: 23 }
+      want_action_if_matched: deny
+    severity: CAT_I
+    remediation_template_ref: CIS-SUPPLEMENT-ACL-TELNET
+    # NOT a real CIS IOS XE section number - flagging honestly rather than
+    # inventing one. The closest real sections (1.2.4/1.2.5, VTY access-list
+    # + access-class) are about restricting WHO can reach the VTY lines, not
+    # a general "no ACL anywhere permits telnet inbound" check. CIS's actual
+    # position on telnet is CIS-1.2.2 above (disable it as a transport
+    # entirely - a stronger control than trying to block it via ACL). Kept
+    # as a defense-in-depth supplementary check and, honestly, because it's
+    # the one rule exercising rule_engine.py's ordered-first-match predicate
+    # (verified to actually distinguish rule ORDER, not just presence - see
+    # architecture-document.md). Cite it in the PPT/demo as "AEGIS-internal
+    # defense-in-depth check", never as a CIS-numbered control.

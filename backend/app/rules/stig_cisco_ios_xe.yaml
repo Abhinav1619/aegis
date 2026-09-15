@@ -1,0 +1,60 @@
+# First-ever STIG rule content - closes the biggest gap against the brief's
+# own named frameworks (CIS, NIST, STIGs, ISO): STIG had zero content, not
+# even a placeholder, before this file.
+#
+# rule id = the real DISA V-number (V-xxxxxx), not an invented numbering
+# scheme - maximally traceable, and these are public/checkable at
+# cyber.trackr.live or stigviewer.com.
+#
+# Spot-checked 2026-09-15 via web search against public STIG references
+# (cyber.trackr.live, Tenable's audit library) - all 5 V-numbers below
+# confirmed to match their cited title/intent exactly. NOT the same as
+# reading the actual DISA XCCDF/PDF end to end the way the CIS Cisco IOS XE
+# batch was checked - a real source-document pass is still worth doing if
+# the teammate can share the actual STIG file, same as the CIS PDF.
+
+framework: STIG
+standard_version: "Cisco IOS XE Router RTR STIG V3R5"
+rules:
+  - id: STIG-V-216662
+    title: "Network traffic must be denied by default and allowed by exception"
+    control_family: AC
+    check_type: ordered-first-match
+    predicate:
+      field: AC.acl_rules
+      match: { protocol: tcp, port: null }
+      want_action_if_matched: deny
+    severity: CAT_I
+    remediation_template_ref: STIG-V-216662
+
+  - id: STIG-V-216645
+    title: "Routing protocol authentication must be configured"
+    control_family: SC
+    check_type: boolean
+    predicate: { field: SC.routing_authentication, equals: true }
+    severity: CAT_II
+    remediation_template_ref: STIG-V-216645
+
+  - id: STIG-V-216650
+    title: "Control Plane Protection must be configured"
+    control_family: SC
+    check_type: boolean
+    predicate: { field: SC.control_plane_protection, equals: true }
+    severity: CAT_I
+    remediation_template_ref: STIG-V-216650
+
+  - id: STIG-V-230045
+    title: "IPv6 Router Advertisements must be suppressed on external interfaces"
+    control_family: SC
+    check_type: boolean
+    predicate: { field: SC.ipv6_ra_suppression, equals: true }
+    severity: CAT_II
+    remediation_template_ref: STIG-V-230045
+
+  - id: STIG-V-216675
+    title: "CDP must be disabled on external interfaces"
+    control_family: SC
+    check_type: boolean
+    predicate: { field: SC.external_interface_cdp, equals: false }
+    severity: CAT_III
+    remediation_template_ref: STIG-V-216675

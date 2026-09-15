@@ -18,6 +18,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from dotenv import load_dotenv
+from pydantic import BaseModel, Field, ValidationError, field_validator
 
 # Import order matters here (Langfuse skill's own "Common Mistakes" list):
 # env vars must be loaded before the Langfuse client reads them.
@@ -95,18 +96,33 @@ def _extract_json(text: str) -> Optional[dict]:
         return None
 
 
+class _LLMResponseSchema(BaseModel):
+    """Pydantic replacement for the hand-rolled dict checks this used to be
+    (same three guarantees, same fail-closed behavior on rejection - a
+    pure refactor, not a validation-logic change): structurally well-formed,
+    `canonical_field` is either "UNKNOWN" or actually in our enum (never a
+    field the model invented), `confidence` is a real number in [0, 1]."""
+
+    canonical_field: str
+    value: object
+    confidence: float = Field(ge=0, le=1)
+    reasoning: str = ""
+
+    @field_validator("canonical_field")
+    @classmethod
+    def _must_be_known_or_unknown(cls, v: str) -> str:
+        if v != "UNKNOWN" and not is_valid_field(v):
+            raise ValueError(f"hallucinated canonical_field: {v!r}")
+        return v
+
+
 def _validate(raw: dict) -> Optional[dict]:
     if not isinstance(raw, dict):
         return None
-    field = raw.get("canonical_field")
-    conf = raw.get("confidence")
-    if field is None or "value" not in raw:
-        return None
-    if field != "UNKNOWN" and not is_valid_field(field):
-        return None  # hallucinated field name - reject, don't trust
-    if not isinstance(conf, (int, float)) or not (0 <= conf <= 1):
-        return None
-    return raw
+    try:
+        return _LLMResponseSchema.model_validate(raw).model_dump()
+    except ValidationError:
+        return None  # malformed/hallucinated/out-of-range - reject, don't trust
 
 
 def _user_prompt(unit_text: str, context: str, similar_kb_entries: list) -> str:

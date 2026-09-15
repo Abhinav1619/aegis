@@ -1,0 +1,16 @@
+# Tier-1 seed KB for sonic - see cisco_ios.yaml's header for the general
+# approach. Same as pfsense.yaml: ACL_TABLE/ACL_RULE.* fields are split
+# across multiple flattened JSON paths (the same §3.5 cross-reference gap)
+# and are deliberately NOT seeded here for that reason.
+
+vendor: sonic
+entries:
+  - syntax_pattern: "MGMT_INTERFACE.eth0|192.168.1.1/24.telnet=disabled"
+    canonical_field: AC.telnet_enabled
+    value: false
+  - syntax_pattern: "MGMT_INTERFACE.eth0|192.168.1.1/24.ssh_version=2"
+    canonical_field: IA.ssh_version
+    value: 2
+  - syntax_pattern: "SYSLOG_SERVER.10.0.0.9=<present>"
+    canonical_field: AU.logging_host
+    value: "10.0.0.9"

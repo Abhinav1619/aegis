@@ -1,0 +1,78 @@
+# First-ever pfSense rule content. "CIS Cisco IOS XE" and "CIS pfSense" are
+# two completely separate source documents that happen to share the
+# "framework: CIS" label - rule ids here are prefixed "CIS-PF-" (not just
+# "CIS-<section>") specifically so a "Framework/ID" column showing e.g.
+# "CIS / 4.1.2" is never ambiguous about which document that section number
+# is from.
+#
+# Not independently re-verified against the source PDF the way the Cisco IOS
+# XE batch was (no local copy of "CIS pfSense Firewall Benchmark v1.1.0" to
+# check against yet - ask the cybersecurity teammate to share it the same
+# way she shared the Cisco one, then do that pass). Wired in on the strength
+# of her Batch 1 track record (10/10 Cisco citations independently confirmed
+# correct), not blind trust - but that's a real gap until the PDF itself is
+# checked, stated plainly rather than glossed over.
+
+framework: CIS
+standard_version: "CIS pfSense Firewall Benchmark v1.1.0"
+rules:
+  - id: CIS-PF-1.8
+    title: "Web management must use HTTPS"
+    control_family: SC
+    check_type: boolean
+    predicate: { field: SC.webgui_protocol, equals: true }
+    severity: CAT_I
+    remediation_template_ref: CIS-PF-1.8
+
+  - id: CIS-PF-4.1.2
+    title: "Firewall allow rules must not permit traffic from Any source"
+    control_family: AC
+    check_type: ordered-first-match
+    predicate:
+      field: AC.acl_rules
+      match: { protocol: any, port: null }
+      want_action_if_matched: deny
+    severity: CAT_I
+    remediation_template_ref: CIS-PF-4.1.2
+    # Reuses the same ordered-first-match predicate as
+    # CIS-SUPPLEMENT-ACL-TELNET in cis_ios_xe_17.yaml, applied to pfSense's
+    # own filter.rule[] entries instead of Cisco access-list lines - same
+    # underlying idea (rule order matters), different vendor's syntax.
+    # Same §3.5 cross-reference-linking caveat applies: pfSense rules are
+    # flattened as separate type/protocol/destination units per rule index,
+    # so this depends on that reassembly actually working for a real config,
+    # not yet proven against one.
+
+  - id: CIS-PF-4.1.5
+    title: "Logging must be enabled for all firewall rules"
+    control_family: AU
+    check_type: boolean
+    predicate: { field: AU.firewall_rule_logging, equals: true }
+    severity: CAT_II
+    remediation_template_ref: CIS-PF-4.1.5
+
+  - id: CIS-PF-6.1
+    title: "Remote syslog must be configured"
+    control_family: AU
+    check_type: boolean
+    predicate: { field: AU.logging_host, equals: true }
+    severity: CAT_II
+    remediation_template_ref: CIS-PF-6.1
+    # Deliberately reuses AU.logging_host (already used by CIS-2.2.4 for
+    # Cisco and NIST-AU-4-1) rather than adding a new AU.syslog_servers field
+    # as her doc proposed - same concept ("is a remote log destination
+    # configured"), one field serves both vendors, consistent with how
+    # AC.telnet_enabled is already shared across CIS and NIST rules.
+
+  - id: CIS-PF-5.5.1
+    title: "OpenVPN must use strong ciphers and hashing"
+    control_family: SC
+    check_type: set-membership
+    predicate: { field: SC.enabled_ciphers, mode: none_in, values: ["des", "3des", "rc4", "md5", "sha1"] }
+    severity: CAT_II
+    remediation_template_ref: CIS-PF-5.5.1
+    # Reuses SC.enabled_ciphers (already used by NIST-SC-8-1/SC-13) rather
+    # than a narrower SC.openvpn_cipher_hash field - same reasoning as
+    # AU.logging_host above. Will show NOT_EVALUATED until cipher-suite
+    # extraction exists for any vendor (see nist_800_53_slice.yaml's own
+    # note on this).
