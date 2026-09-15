@@ -96,15 +96,14 @@ def generate(
     story = []
 
     # Authenticity seal - directly answers "is this really an AEGIS output":
-    # a bordered badge naming the report id, generation time, and the fact
-    # that findings trace back to a hash-chained audit log (architecture
-    # §4) rather than a claim with nothing behind it.
+    # a bordered badge naming the report id and generation time. Does NOT
+    # claim a hash-chained audit log - that's not built yet (roadmap item),
+    # and this project doesn't put unbuilt claims in front of judges.
     seal_style = ParagraphStyle("seal", parent=styles["Normal"], fontSize=8, textColor=_SEAL_GREEN, leading=11)
     seal_table = Table(
         [[Paragraph(
             f"<b>&#10003; AEGIS VERIFIED OUTPUT</b> &nbsp;·&nbsp; Report ID {rid} &nbsp;·&nbsp; "
-            f"Generated {_current_report_meta['generated_at']} &nbsp;·&nbsp; "
-            f"Findings trace to a tamper-evident, hash-chained audit log",
+            f"Generated {_current_report_meta['generated_at']}",
             seal_style,
         )]],
         colWidths=[6.6 * inch],

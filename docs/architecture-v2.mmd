@@ -48,9 +48,9 @@ flowchart TD
     PF --> SNAP["Evaluation snapshot pinned:<br/>rule_version, kb_entry_version, timestamp<br/>+ framework-version drift flag if standard revised"]
     NE --> SNAP
 
-    SNAP --> REM["7. Remediation<br/>KB template &rarr; LLM draft (grammar-validated)<br/>&rarr; ALWAYS human-gated before shipping"]
+    SNAP --> REM["7. Remediation<br/>KB-template lookup ONLY, keyed (vendor, rule_id)<br/>deliberately NOT LLM-drafted this build<br/>&#40;highest prompt-injection-risk surface&#41;<br/>no template on file &rarr; 'no remediation available,'<br/>never improvised"]
 
-    REM --> RPT["8. Per-device PDF report<br/>pass/fail/not_evaluated + severity + remediation<br/>+ evidence (source unit + KB provenance)<br/>+ confidence tier / review-status per finding<br/>+ device ID + parse coverage by severity"]
+    REM --> RPT["8. Per-device PDF report<br/>'AEGIS VERIFIED OUTPUT' banner: report id + generated-at<br/>&#40;no hash-chained audit log yet - roadmap, not built&#41;<br/>pass/fail/not_evaluated + severity + remediation<br/>+ evidence (source unit + KB provenance)<br/>+ confidence tier / review-status per finding<br/>+ device ID + parse coverage by severity"]
 
     RPT --> ROLLUP["Batch summary rolls up every device in the upload"]
 
