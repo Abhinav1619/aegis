@@ -182,9 +182,19 @@ def generate(
         rows.append([
             _RESULT_LABELS.get(f["result"], f["result"]),
             Paragraph(_escape(f.get("title") or f["rule_id"]), styles["BodyText"]),
-            f"{f['framework']} / {f['rule_id']}",
+            # Same bare-string overflow bug as Source below - a long rule id
+            # (e.g. "CIS / CIS-SUPPLEMENT-ACL-TELNET") doesn't wrap and spills
+            # into the Severity/Source columns instead.
+            Paragraph(_escape(f"{f['framework']} / {f['rule_id']}"), styles["BodyText"]),
             f["severity"],
-            _TIER_LABELS.get(f.get("confidence_tier"), "—"),
+            # Was a bare string - ReportLab only word-wraps Flowables
+            # (Paragraph) inside a table cell, so a plain string never wraps
+            # to its column width and just overflows into the next column
+            # instead (found live: "Instantly recognized" drawn on top of the
+            # Remediation cell's text whenever that row's Control text wrapped
+            # to 3+ lines and made the row tall enough for the overflow to
+            # become visible). Same fix as Control/Remediation - wrap it too.
+            Paragraph(_escape(_TIER_LABELS.get(f.get("confidence_tier"), "—")), styles["BodyText"]),
             Paragraph(_escape(rem).replace("\n", "<br/>"), styles["BodyText"]),
         ])
 
