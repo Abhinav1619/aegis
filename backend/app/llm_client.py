@@ -26,7 +26,7 @@ load_dotenv()
 
 from langfuse import get_client  # noqa: E402
 
-from .canonical_schema import CANONICAL_FIELDS, is_valid_field  # noqa: E402
+from .canonical_schema import CANONICAL_FIELDS, FIELD_METADATA, is_valid_field  # noqa: E402
 
 langfuse = get_client()
 
@@ -54,6 +54,16 @@ def _build_system_prompt() -> str:
     # a live bug (Gemini invented "Logging and Monitoring" as a field name)
     # showed this needs to be explicit, not implied.
     field_list = ", ".join(CANONICAL_FIELDS.keys())
+    # A second real bug (2026-09-15/16): for boolean-natured fields, the LLM
+    # would return the descriptive token it saw (e.g. "https") instead of a
+    # real JSON boolean - `_coerce_bool` then reads that unrecognized string
+    # as False, silently flipping a compliant device to FAIL. Listing exactly
+    # which fields are boolean-natured, with a concrete example naming the
+    # actual field that caught this, closes that gap without touching the
+    # generic, field-agnostic boolean coercion in rule_engine.py.
+    bool_fields = ", ".join(
+        f for f, meta in FIELD_METADATA.items() if meta.get("value_kind") == "bool"
+    )
     return (
         "You classify a single line or config unit from a network device "
         "configuration file into ONE canonical security field. Only ever "
@@ -63,7 +73,14 @@ def _build_system_prompt() -> str:
         f"canonical_field MUST be exactly one of these existing values: "
         f"{field_list}. Never invent a new field name. If the unit does not "
         'map to any of these, set canonical_field to "UNKNOWN" and '
-        "confidence to 0."
+        "confidence to 0. "
+        f"These fields are boolean-natured: {bool_fields}. For these, "
+        "\"value\" MUST be the JSON boolean true or false, never a "
+        "descriptive word or the raw token you saw in the line. For example, "
+        "a line showing the web GUI protocol is \"https\" maps to "
+        '"canonical_field": "SC.webgui_protocol", "value": true (HTTPS '
+        "enforced), not \"value\": \"https\"; if it showed \"http\" instead, "
+        '"value" would be false.'
     )
 
 
