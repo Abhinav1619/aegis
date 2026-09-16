@@ -38,13 +38,13 @@ entries:
 
   # General (redaction-normalized) - matches any cisco_ios config using
   # that enable-secret type, not just this sample's specific hash.
-  - syntax_pattern: "enable secret 5 <REDACTED:ENABLE_SECRET_HASH>"
+  - syntax_pattern: "enable secret 5 [REDACTED:ENABLE_SECRET_HASH]"
     canonical_field: AC.privileged_password_type
     value: secret_type_5
-  - syntax_pattern: "enable secret 8 <REDACTED:ENABLE_SECRET_HASH>"
+  - syntax_pattern: "enable secret 8 [REDACTED:ENABLE_SECRET_HASH]"
     canonical_field: AC.privileged_password_type
     value: secret_type_8
-  - syntax_pattern: "enable secret 9 <REDACTED:ENABLE_SECRET_HASH>"
+  - syntax_pattern: "enable secret 9 [REDACTED:ENABLE_SECRET_HASH]"
     canonical_field: AC.privileged_password_type
     value: secret_type_9
 

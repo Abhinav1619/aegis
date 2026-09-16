@@ -24,6 +24,19 @@ class RedactionResult:
 # captured values that should NOT be redacted for this rule even though they
 # matched, which capture group holds the actual secret to redact (default 1
 # - only ENABLE_SECRET_HASH differs, see below)).
+# `\S+` (any non-whitespace) is the wrong boundary for a value-capturing
+# group here: in XML/JSON-embedded values, the value is often immediately
+# followed by a structural delimiter with NO separating whitespace (e.g.
+# `password=CANARY_NUTPASS</upsd_users></config></nut>`, `secret="x"`).
+# `\S+` greedily swallows those delimiters as part of the "secret," and
+# replacing that whole match deletes real closing tags/quotes from the file -
+# found via a real pfSense config where this silently destroyed three closing
+# tags and produced a file that no longer parses as XML at all (0 units, no
+# error surfaced). `[^\s<>"']+` stops at whitespace or any of the delimiter
+# characters that matter across CLI/XML/JSON, so only the actual value is
+# captured and structure around it survives untouched.
+_VALUE = r"[^\s<>\"']+"
+
 _RULES = [
     ("TYPE7_PASSWORD", re.compile(r"\bpassword 7 ([0-9A-Fa-f]+)\b"), None, 1),
     # Was hardcoded to type "5" only - types 8 and 9 (the ones CIS-1.4.1
@@ -32,19 +45,19 @@ _RULES = [
     # queue. Broadened to any type digit; the digit itself stays visible
     # (it's what AC.privileged_password_type needs to read) while only the
     # hash (group 2) is redacted.
-    ("ENABLE_SECRET_HASH", re.compile(r"\benable secret (\d+) (\S+)"), None, 2),
+    ("ENABLE_SECRET_HASH", re.compile(r"\benable secret (\d+) (" + _VALUE + r")"), None, 2),
     # "public"/"private" are the well-known CIS-flagged DEFAULT community
     # strings (CIS-1.5.2/1.5.3) - not real secrets, so there's nothing to
     # protect by hiding them, and doing so was actively breaking those two
     # checks: once redacted to a generic placeholder, the compliance check
     # can never again tell a default string apart from a real custom one.
     # Any other community string still gets redacted normally.
-    ("SNMP_COMMUNITY", re.compile(r"\bsnmp-server community (\S+)"), {"public", "private"}, 1),
-    ("PRE_SHARED_KEY", re.compile(r"\bpre-shared-key\s+(\S+)", re.IGNORECASE), None, 1),
-    ("AAA_KEY", re.compile(r"\b(?:tacacs-server|radius-server)\s+key\s+(\S+)", re.IGNORECASE), None, 1),
+    ("SNMP_COMMUNITY", re.compile(r"\bsnmp-server community (" + _VALUE + r")"), {"public", "private"}, 1),
+    ("PRE_SHARED_KEY", re.compile(r"\bpre-shared-key\s+(" + _VALUE + r")", re.IGNORECASE), None, 1),
+    ("AAA_KEY", re.compile(r"\b(?:tacacs-server|radius-server)\s+key\s+(" + _VALUE + r")", re.IGNORECASE), None, 1),
     # Generic fallback for flattened JSON-style "key/secret/password: value" -
     # deliberately broad, applied last so specific rules above take priority.
-    ("GENERIC_SECRET_FIELD", re.compile(r"\b(?:secret|password|psk|shared_key)\s*[:=]\s*(\S+)", re.IGNORECASE), None, 1),
+    ("GENERIC_SECRET_FIELD", re.compile(r"\b(?:secret|password|psk|shared_key)\s*[:=]\s*(" + _VALUE + r")", re.IGNORECASE), None, 1),
 ]
 
 # A secret shape neither the regex rules above nor (in this build) an entropy
@@ -65,7 +78,25 @@ def redact(text: str) -> RedactionResult:
             if keep_values and secret.lower() in keep_values:
                 return m.group(0)  # matched, but a known-safe value - leave as-is
             redacted_count += 1
-            return m.group(0).replace(secret, f"<REDACTED:{type_name}>")
+            # Square brackets, not angle brackets: this placeholder gets
+            # inserted into whatever format the raw file is (CLI text, JSON
+            # string values, or XML text content) - redaction runs before
+            # fingerprinting even knows the format. A literal "<" here reads
+            # as the start of a new element to an XML parser (found via a
+            # real "unbound prefix" ParseError on a real pfSense config with
+            # a redacted secret - the whole file silently produced 0 units,
+            # no error surfaced). "[...]" has no special meaning in any of
+            # the three formats this pipeline handles.
+            placeholder = f"[REDACTED:{type_name}]"
+            if len(secret) >= 2 and secret[0] == secret[-1] and secret[0] in ("'", '"'):
+                # `\S+` greedily swallowed a surrounding quote pair too (an
+                # XML/JSON-style quoted attribute value, e.g. secret="x") -
+                # replacing the whole quoted token with an unquoted
+                # placeholder breaks XML attribute syntax (found via the same
+                # real pfSense config: secret="..." became secret=[REDACTED:
+                # ...], invalid). Keep the same quote marks around it.
+                placeholder = f"{secret[0]}{placeholder}{secret[0]}"
+            return m.group(0).replace(secret, placeholder)
 
         text = pattern.sub(_sub, text)
         if redacted_count:
