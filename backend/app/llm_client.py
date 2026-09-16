@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from dotenv import load_dotenv
-from pydantic import BaseModel, Field, ValidationError, field_validator
+from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
 
 # Import order matters here (Langfuse skill's own "Common Mistakes" list):
 # env vars must be loaded before the Langfuse client reads them.
@@ -131,6 +131,30 @@ class _LLMResponseSchema(BaseModel):
         if v != "UNKNOWN" and not is_valid_field(v):
             raise ValueError(f"hallucinated canonical_field: {v!r}")
         return v
+
+    @model_validator(mode="after")
+    def _value_matches_declared_kind(self):
+        # A real bug, not hypothetical: the LLM picked the closest-sounding
+        # existing field for a setting we don't actually model
+        # (pfSense's "SSH key-only auth" -> IA.ssh_version, a completely
+        # different thing from SSH protocol version) and returned `true` for
+        # a field that's supposed to be a number. The canonical_field name
+        # was valid, so the old check let it through, and CIS-2.1.1.2's
+        # range check then silently misread True as 1.0 - a wrong FAIL on a
+        # device that was never even asked about SSH version. Checking the
+        # field name alone was never enough; the value's actual type has to
+        # match what that field is declared to hold too.
+        if self.canonical_field == "UNKNOWN":
+            return self
+        kind = FIELD_METADATA.get(self.canonical_field, {}).get("value_kind")
+        v = self.value
+        if kind == "bool" and not isinstance(v, bool):
+            raise ValueError(f"{self.canonical_field} is boolean-natured, got {v!r}")
+        if kind == "number" and (isinstance(v, bool) or not isinstance(v, (int, float))):
+            raise ValueError(f"{self.canonical_field} is numeric, got {v!r}")
+        if kind == "string" and not isinstance(v, str):
+            raise ValueError(f"{self.canonical_field} is string-natured, got {v!r}")
+        return self
 
 
 def _validate(raw: dict) -> Optional[dict]:
