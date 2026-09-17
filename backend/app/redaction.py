@@ -58,6 +58,19 @@ _RULES = [
     # Generic fallback for flattened JSON-style "key/secret/password: value" -
     # deliberately broad, applied last so specific rules above take priority.
     ("GENERIC_SECRET_FIELD", re.compile(r"\b(?:secret|password|psk|shared_key)\s*[:=]\s*(" + _VALUE + r")", re.IGNORECASE), None, 1),
+    # XML *elements* use a completely different separator than the rule
+    # above assumes ("<password>x</password>", not "password=x" or
+    # "password: x") - found live on a real pfSense config:
+    # <ppps><ppp><password>CANARY_PPPOEPASS</password></ppp></ppps> matched
+    # NOTHING above, even though "password" is exactly the keyword the rule
+    # is supposed to catch, because the character after it is ">", not
+    # ":"/"=". Same keyword vocabulary, same "don't try to catch every
+    # possible tag name" scope (a tag like <passphrase> or <ipsecpsk> is
+    # still a disclosed gap, same as before) - this only closes the
+    # separator gap, not the keyword-coverage one.
+    ("XML_ELEMENT_SECRET",
+     re.compile(r"<(\w*(?:secret|password|psk|shared_key)\w*)>([^<]+)</\1>", re.IGNORECASE),
+     None, 2),
 ]
 
 # A secret shape neither the regex rules above nor (in this build) an entropy
